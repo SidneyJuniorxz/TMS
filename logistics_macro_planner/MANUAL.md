@@ -4,7 +4,6 @@
 
 O **Logistics Macro Planner** é um motor de planejamento logístico pré-TMS (Transportation Management System) que simula a consolidação inteligente de entregas em veículos, otimizando rotas por custo, distância e plausibilidade.
 
-**URL de Produção:** https://tms.svssolucoes.com.br  
 **Backend:** FastAPI + SQLite  
 **Frontend:** HTML/CSS/JS + Leaflet.js (mapa interativo)
 
@@ -14,8 +13,8 @@ O **Logistics Macro Planner** é um motor de planejamento logístico pré-TMS (T
 
 ### Backend (API)
 ```bash
-cd /home/reploid/Projetos/TMS/logistics_macro_planner
-.venv/bin/python3 run.py
+cd /caminho/do/projeto/logistics_macro_planner
+python3 run.py
 ```
 O servidor inicia em `http://127.0.0.1:8000`.
 
@@ -235,15 +234,7 @@ pm2 save
 ```
 
 ### Cloudflare Tunnel
-O túnel está configurado em `~/.cloudflared/tms_config.yml` e mapeia:
-```
-tms.svssolucoes.com.br → http://127.0.0.1:8000
-```
-
-Para recriar o registro DNS:
-```bash
-cloudflared tunnel route dns tms tms.svssolucoes.com.br
-```
+O túnel mapeia o domínio para o serviço local na porta 8000.
 
 ---
 
@@ -251,8 +242,8 @@ cloudflared tunnel route dns tms tms.svssolucoes.com.br
 
 Ao atualizar para a v2, execute a migração uma vez:
 ```bash
-cd /home/reploid/Projetos/TMS/logistics_macro_planner
-.venv/bin/python3 scripts/migrate_v2.py
+cd /caminho/do/projeto/logistics_macro_planner
+python3 scripts/migrate_v2.py
 ```
 
 A migração é **aditiva** (não destrói dados existentes):

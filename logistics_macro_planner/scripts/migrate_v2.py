@@ -3,8 +3,8 @@ Migration script v2 — Adds new columns to deliveries and vehicles tables.
 Run this ONCE before deploying the new backend version.
 
 Usage:
-    cd /home/reploid/Projetos/TMS/logistics_macro_planner
-    .venv/bin/python3 scripts/migrate_v2.py
+    cd /caminho/do/projeto/logistics_macro_planner
+    python3 scripts/migrate_v2.py
 """
 import sqlite3
 import os
