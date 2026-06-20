@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Logistics Macro Planner — Motor de planejamento logístico pré-TMS com consolidação inteligente de cargas e otimização de rotas.">
+    <title>Logistics Macro Planner — Pre-TMS Engine</title>
+    <!-- Leaflet.js CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="pulse-dot"></span>
+                <h1>Logistics Macro Planner</h1>
+                <span class="badge">Pre-TMS Engine v2</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn-back" id="btn-back" style="display:none;" onclick="goBack()">
+                    ← Voltar
+                </button>
+                <div class="system-status">
+                    <span class="status-indicator online"></span>
+                    <span>Backend Conectado</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <main class="app-main">
+            <!-- Sidebar: Inputs and History -->
+            <section class="sidebar-section" id="sidebar-section">
+                <!-- CSV Upload -->
+                <div class="card glass">
+                    <h2>1. Importar Entregas</h2>
+                    <p class="section-desc">Upload de CSV com colunas: <code>origem_cidade</code>, <code>origem_cep</code>, <code>destino_cidade</code>, <code>destino_cep</code>, <code>peso_kg</code>, <code>comprimento_cm</code>, <code>largura_cm</code>, <code>altura_cm</code>, <code>deadline</code>, <code>descricao</code>, <code>prioridade</code>, <code>observacao</code>.</p>
+                    <div class="template-download">
+                        <button class="btn btn-outline" id="download-template-btn" onclick="downloadTemplate()">
+                            📥 Baixar Modelo de Importação
+                        </button>
+                    </div>
+                    <form id="upload-form" class="upload-area">
+                        <label for="csv-file" class="dropzone">
+                            <span class="icon">📄</span>
+                            <span class="text">Escolher Arquivo CSV</span>
+                            <input type="file" id="csv-file" accept=".csv" required>
+                        </label>
+                        <button type="submit" class="btn btn-primary" id="upload-btn">Upload Entregas</button>
+                    </form>
+                    <div id="upload-status" class="status-msg"></div>
+                </div>
+
+                <!-- Simulation Trigger -->
+                <div class="card glass">
+                    <h2>2. Configurar e Executar</h2>
+                    <form id="sim-form">
+                        <div class="form-group">
+                            <label for="origin-select">Cidade de Origem</label>
+                            <select id="origin-select" required>
+                                <option value="">Selecione...</option>
+                                <option value="5" selected>Guarulhos</option>
+                                <option value="4">São Paulo</option>
+                                <option value="1">Curitiba</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                Veículos Disponíveis
+                                <button type="button" class="btn-link btn-add-vehicle" onclick="openVehicleModal()">+ Criar Veículo</button>
+                            </label>
+                            <div id="vehicle-checkboxes" class="checkbox-group">
+                                <div class="checkbox-item loading">Carregando veículos...</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Entregas para Roteirizar</label>
+                            <div class="select-all-bar">
+                                <button type="button" class="btn-link" id="select-all-deliveries">Selecionar Todas</button>
+                                <button type="button" class="btn-link" id="clear-all-deliveries">Limpar Seleção</button>
+                                <button type="button" class="btn-link btn-danger" id="delete-all-deliveries" onclick="deleteAllDeliveries()">🗑️ Excluir Todas</button>
+                            </div>
+                            <div id="delivery-checkboxes" class="checkbox-group list-group">
+                                <div class="checkbox-item loading">Carregando entregas...</div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-glow" id="run-sim-btn">⚡ Gerar & Otimizar Rotas</button>
+                    </form>
+                </div>
+
+                <!-- Simulation History -->
+                <div class="card glass history-card">
+                    <h2>Histórico de Simulações</h2>
+                    <div id="history-list" class="history-list">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Map and Results -->
+            <section class="main-content-section" id="results-section">
+                <!-- Map Card -->
+                <div class="card map-card glass">
+                    <div id="map"></div>
+                </div>
+
+                <!-- Results Details -->
+                <div class="results-container">
+                    <!-- Consolidation Summary -->
+                    <div class="card glass consolidation-card" id="consolidation-card" style="display: none;">
+                        <div class="card-header">
+                            <h2>📦 Consolidação de Cargas</h2>
+                            <div class="cost-badge" id="total-cost-badge">R$ 0,00</div>
+                        </div>
+                        <div class="consolidation-summary" id="consolidation-summary">
+                            <!-- Dynamic content -->
+                        </div>
+                        <div class="consolidation-alerts" id="consolidation-alerts">
+                            <!-- Alerts -->
+                        </div>
+                        <div class="vehicle-allocations" id="vehicle-allocations">
+                            <!-- Per-vehicle allocation cards -->
+                        </div>
+                        <div class="unallocated-section" id="unallocated-section" style="display: none;">
+                            <h3>⚠️ Cargas Não Alocadas</h3>
+                            <div id="unallocated-list"></div>
+                        </div>
+                    </div>
+
+                    <!-- Recommended Route -->
+                    <div class="card result-card glass highlight" id="best-route-card" style="display: none;">
+                        <div class="card-header">
+                            <h2>Cenário Recomendado</h2>
+                            <div class="score-badge" id="best-score">0</div>
+                        </div>
+                        <div class="metrics-grid">
+                            <div class="metric">
+                                <span class="label">Veículo</span>
+                                <span class="val" id="best-vehicle">—</span>
+                            </div>
+                            <div class="metric">
+                                <span class="label">Distância Total</span>
+                                <span class="val" id="best-distance">0 km</span>
+                            </div>
+                            <div class="metric">
+                                <span class="label">Plausibilidade</span>
+                                <span class="val" id="best-plausibility">0 / 100</span>
+                            </div>
+                            <div class="metric">
+                                <span class="label">Custo Estimado</span>
+                                <span class="val accent-green" id="best-cost">R$ 0,00</span>
+                            </div>
+                        </div>
+
+                        <!-- Route Stops visual -->
+                        <div class="route-stops-path">
+                            <h3>Sequência de Paradas</h3>
+                            <div class="stops-flow" id="best-stops-flow">
+                                <!-- Stops row -->
+                            </div>
+                        </div>
+
+                        <!-- Split Recommendation (glowing warning) -->
+                        <div class="warning-banner" id="split-warning" style="display: none;">
+                            <span class="warning-icon">💡</span>
+                            <div class="warning-text">
+                                <strong>Sugestão de Divisão:</strong>
+                                <span id="split-message"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scenario List / Alternatives -->
+                    <div class="card glass" id="all-scenarios-card" style="display: none;">
+                        <h2>Opções Alternativas de Rota</h2>
+                        <div class="scenarios-table-container">
+                            <table class="scenarios-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Veículo</th>
+                                        <th>Paradas</th>
+                                        <th>Distância</th>
+                                        <th>Custo</th>
+                                        <th>Score</th>
+                                        <th>Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="scenarios-tbody">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Vehicle Creation Modal -->
+    <div class="modal-overlay" id="vehicle-modal" style="display: none;">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h2>Criar Novo Veículo</h2>
+                <button class="modal-close" onclick="closeVehicleModal()">✕</button>
+            </div>
+            <form id="vehicle-form" onsubmit="submitVehicle(event)">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="v-name">Nome</label>
+                            <input type="text" id="v-name" placeholder="Ex: Truck 3/4" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="v-tipo">Tipo</label>
+                            <select id="v-tipo">
+                                <option value="Van">Van</option>
+                                <option value="Truck" selected>Truck</option>
+                                <option value="Carreta">Carreta</option>
+                                <option value="Furgão">Furgão</option>
+                                <option value="VUC">VUC</option>
+                                <option value="Bitrem">Bitrem</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="v-max-weight">Peso Máx (kg)</label>
+                            <input type="number" id="v-max-weight" min="1" step="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="v-max-volume">Volume Máx (m³)</label>
+                            <input type="number" id="v-max-volume" min="0.1" step="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="v-cost-km">Custo/km (R$)</label>
+                            <input type="number" id="v-cost-km" min="0" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="v-max-length">Comprimento (m)</label>
+                            <input type="number" id="v-max-length" min="0" step="0.1" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="v-max-width">Largura (m)</label>
+                            <input type="number" id="v-max-width" min="0" step="0.1" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="v-max-height">Altura (m)</label>
+                            <input type="number" id="v-max-height" min="0" step="0.1" value="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeVehicleModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-glow" id="create-vehicle-btn">Criar Veículo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Leaflet.js Script -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="app.js"></script>
+</body>
+</html>

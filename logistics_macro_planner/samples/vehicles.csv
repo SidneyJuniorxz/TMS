@@ -1,0 +1,4 @@
+name,max_weight,max_volume,max_length,max_width,max_height,cost_km
+Truck grande,10000,60,8,2.5,3,2.8
+Caminhao medio,5000,30,6,2.2,2.5,1.9
+Van,1500,12,3.5,1.8,2,1.2

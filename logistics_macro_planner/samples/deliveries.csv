@@ -1,0 +1,4 @@
+origem_cidade,origem_cep,destino_cidade,destino_cep,peso_kg,comprimento_cm,largura_cm,altura_cm,deadline,descricao,prioridade,observacao
+Guarulhos,07000-000,Curitiba,80000-000,200,100,60,50,5,Peças automotivas,alta,Frágil
+Guarulhos,07000-000,Joinville,89200-000,100,80,50,40,4,Eletrodomésticos,media,
+Guarulhos,07000-000,Florianópolis,88000-000,120,90,60,45,5,Componentes eletrônicos,alta,Urgente
